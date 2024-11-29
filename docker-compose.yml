@@ -3,31 +3,30 @@ services:
 # ? Servicio de DB postgres
   pgsql:
     image: postgres:latest
-    restart: always
     container_name: pgsql
     ports:
       - "5432:5432"
     environment:
-       - POSTGRES_DB: ${POSTGRES_DB}
-       - POSTGRES_USER: ${POSTGRES_USER} 
-       - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-       - laravel-network
+      - laravel-network
     volumes:
-       - pgsql_data:/var/lib/postgresql/data
+      - pgsql_data:/var/lib/postgresql/data
 
 # ? Servicio de pgadmin
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
-    environment: 
-      - PGADMIN_DEFAULT_EMAIL: ${PGADMIN_MAIL}
-      - PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASS}
-    ports: 
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_MAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASS}
+    ports:
       - "5050:80"
-    networks: 
-      - laravel-network 
-    depends_on: 
+    networks:
+      - laravel-network
+    depends_on:
       - pgsql
 
 # ? Servicio de Mosquitto
@@ -35,11 +34,11 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     environment:
-      - TZ=Europe/Madrid    
+      - TZ=Europe/Madrid
     volumes:
-      - /home/pi/volumes/mosquitto/config:/mosquitto/config
-      - /home/pi/volumes/mosquitto/data:/mosquitto/data
-      - /home/pi/volumes/mosquitto/log:/mosquitto/log
+      - mosquitto_config:/mosquitto/config
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
     ports:
       - 1883:1883
       - 9001:9001
@@ -84,17 +83,22 @@ services:
       - ./back-notificaciones/:/home/app
 
 # ? Servicio del FRONT
-  aunglar-app:
+  angular-app:
     build:
       args:
         user: "${USER}"
       context: ./front-proyecto/
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "4200:4200"
     volumes:
-      - .:/app
-      - /app/node_modules 
-    stdin_open: true 
-    tty: true
+      - ./front-proyecto/:/home/app
 
+networks:
+  laravel-network:
+
+volumes:
+  pgsql_data:
+  mosquitto_config:
+  mosquitto_data:
+  mosquitto_log:
