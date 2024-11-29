@@ -1,0 +1,100 @@
+services:
+
+# ? Servicio de DB postgres
+  pgsql:
+    image: postgres:latest
+    restart: always
+    container_name: pgsql
+    ports:
+      - "5432:5432"
+    environment:
+       - POSTGRES_DB: ${POSTGRES_DB}
+       - POSTGRES_USER: ${POSTGRES_USER} 
+       - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+       - laravel-network
+    volumes:
+       - pgsql_data:/var/lib/postgresql/data
+
+# ? Servicio de pgadmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment: 
+      - PGADMIN_DEFAULT_EMAIL: ${PGADMIN_MAIL}
+      - PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASS}
+    ports: 
+      - "5050:80"
+    networks: 
+      - laravel-network 
+    depends_on: 
+      - pgsql
+
+# ? Servicio de Mosquitto
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    environment:
+      - TZ=Europe/Madrid    
+    volumes:
+      - /home/pi/volumes/mosquitto/config:/mosquitto/config
+      - /home/pi/volumes/mosquitto/data:/mosquitto/data
+      - /home/pi/volumes/mosquitto/log:/mosquitto/log
+    ports:
+      - 1883:1883
+      - 9001:9001
+    restart: unless-stopped
+
+# ? Servicio de autentificación
+  auth:
+    build:
+      args:
+        user: "${USER}"
+      context: ./back-autentificacion/
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./back-autentificacion/:/home/app
+    depends_on:
+      - pgsql
+
+# ? Servicio de formato implementacion
+  formato-implementacion:
+    build:
+      args:
+        user: "${USER}"
+      context: ./back-formato-implementacion/
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8008:8000"
+    volumes:
+      - ./back-formato-implementacion/:/home/app
+
+# ? Servicio de notificaciones
+  notificaciones:
+    build:
+      args:
+        user: "${USER}"
+      context: ./back-notificaciones/
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8009:8000"
+    volumes:
+      - ./back-notificaciones/:/home/app
+
+# ? Servicio del FRONT
+  aunglar-app:
+    build:
+      args:
+        user: "${USER}"
+      context: ./front-proyecto/
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules 
+    stdin_open: true 
+    tty: true
+
